@@ -1,0 +1,226 @@
+<html>
+	<head>
+		<style>
+#mainCan {
+	background-color:#ffffff;
+	position:absolute;
+	left:8px;
+	top:8px;
+	box-shadow:3px 3px 10px #00000080;
+}
+#overlay {
+	position:absolute;
+	left:8px;
+	top:8px;
+	image-rendering:pixelated;
+	cursor:crosshair;
+}
+		</style>
+	</head>
+	<body>
+		<div style="width:854px;height:480px;"></div><br />
+		<input type="color" id="lineColor" value="#000000"></input>
+		<input type="color" id="fillColor" value="#ffffff"></input>
+		<input type="number" min="0" id="lineThickness" value="1" style="width:60px;"></input>
+		<select id="toolSelect">
+			<option value="0">Brush</option>
+			<option value="1">Eraser</option>
+			<option value="2">Bucket</option>
+			<option value="3">Rectangle</option>
+		</select>
+		<canvas id="mainCan" width="854" height="480"></canvas>
+		<canvas id="overlay" width="854" height="480" ondrag="ignoreDefault();drawStart(event);return false;" onmousedown="drawStart(event);" onclick="drawStop();" onmouseup="drawStop();" ondragover="event.preventDefault()" ondrop="appendImg(event)"></canvas>
+		<img id="imag" style="display:none;" />
+		<script>
+var can=document.getElementById("mainCan").getContext("2d");
+var ovr=document.getElementById("overlay").getContext("2d");
+var mPosX=0, mPosY=0;
+var mPosL=[{x:0,y:0}];
+var painting=-1;
+ovr.strokeStyle="#000000";
+ovr.lineWidth=1;
+
+function pixelToCanvas(x, y) {
+	return (x*4)+(y*4*mainCan.width);
+}
+function merge() {
+	can.drawImage(overlay, 0, 0);
+	ovr.clearRect(0, 0, overlay.width, overlay.height);
+}
+function drawStart(event) {
+	if (painting==219) { /* Position of image */
+		ovr.clearRect(0, 0, overlay.width, overlay.height);
+		ovr.drawImage(imag, mPosX, mPosY);
+	}
+	if (painting==219) {
+		painting=220;
+		mPosL=new Array({x:mPosX+imag.width,y:mPosY+imag.height},{x:mPosX,y:mPosY});
+		ovr.clearRect(0, 0, overlay.width, overlay.height);
+		ovr.drawImage(imag, mPosL[1].x, mPosL[1].y, mPosL[0].x-mPosL[1].x, mPosL[0].y-mPosL[1].y);
+	} else {
+		merge();
+		painting=parseInt(toolSelect.value);
+	}
+	if (painting==0) { /* Brush */
+		ovr.strokeStyle=document.getElementById("lineColor").value;
+		ovr.lineWidth=document.getElementById("lineThickness").value;
+		mPosX=event.clientX-8;
+		mPosY=event.clientY-8;
+		mPosL=new Array({x:mPosX,y:mPosY});
+	}
+	if (painting==1) { /* Eraser */
+		mPosX=event.clientX-8;
+		mPosY=event.clientY-8;
+		mPosL=new Array({x:mPosX,y:mPosY});
+	}
+	if (painting==2) { /* Bucket */
+		mPosX=event.clientX-8;
+		mPosY=event.clientY-8;
+	}
+	if (painting==3) { /* Rectangle*/
+		mPosX=event.clientX-8;
+		mPosY=event.clientY-8;
+		mPosL=new Array({x:mPosX,y:mPosY});
+	}
+}
+function cursorUpd(event) {
+	mPosX=event.clientX-8;
+	mPosY=event.clientY-8;
+	if (painting==219) { /* Position of image */
+		ovr.clearRect(0, 0, overlay.width, overlay.height);
+		ovr.drawImage(imag, mPosX, mPosY);
+	}
+	if (painting==220) {
+		mPosL=new Array({x:mPosX,y:mPosY},mPosL[1]);
+		ovr.clearRect(0, 0, overlay.width, overlay.height);
+		ovr.drawImage(imag, mPosL[1].x, mPosL[1].y, mPosL[0].x-mPosL[1].x, mPosL[0].y-mPosL[1].y);
+	}
+	if (painting==0) { /* Brush */
+		mPosL.length++;
+		mPosL[mPosL.length-1]={x:mPosX,y:mPosY};
+		
+		ovr.beginPath();
+		ovr.moveTo(mPosL[mPosL.length-2].x, mPosL[mPosL.length-2].y);
+		ovr.lineTo(mPosL[mPosL.length-1].x, mPosL[mPosL.length-1].y);
+		ovr.stroke();
+	}
+	if (painting==1) { /* Eraser */
+		mPosL.length++;
+		mPosL[mPosL.length-1]={x:mPosX,y:mPosY};
+		
+		ovr.fillStyle="#ff8040";
+		ovr.fillRect(mPosX-8, mPosY-8, 16, 16);
+	}
+	if (painting==2) { /* Bucket */
+		mPosX=event.clientX-8;
+		mPosY=event.clientY-8;
+		can.strokeStyle="";
+		can.lineWidth=0;
+		can.fillStyle=document.getElementById("fillColor").value;
+		/* for (var i=0; i<500; i++) {
+			if (Math.random()<.5) {
+				if (Math.random()<.5) mPosX++; else mPosX--;
+			} else {
+				if (Math.random()<.5) mPosY++; else mPosY--;
+			}
+			can.fillRect(mPosX, mPosY, 1, 1);
+		} */
+	}
+	if (painting==3) { /* Rectangle*/
+		ovr.clearRect(0, 0, overlay.width, overlay.height);
+		ovr.strokeStyle=document.getElementById("lineColor").value;
+		ovr.lineWidth=document.getElementById("lineThickness").value;
+		ovr.fillStyle=document.getElementById("fillColor").value;
+		mPosX=event.clientX-8;
+		mPosY=event.clientY-8;
+		ovr.fillRect(mPosL[0].x, mPosL[0].y, mPosX-mPosL[0].x, mPosY-mPosL[0].y);
+		ovr.strokeRect(mPosL[0].x, mPosL[0].y, mPosX-mPosL[0].x, mPosY-mPosL[0].y);
+	}
+}
+function drawStop() {
+	if (painting==220) merge();
+	if (painting==0) { /* Brush */
+		ovr.clearRect(0, 0, overlay.width, overlay.height);
+		ovr.strokeStyle=document.getElementById("lineColor").value;
+		ovr.lineWidth=document.getElementById("lineThickness").value;
+		ovr.beginPath();
+		ovr.moveTo(mPosL[0].x, mPosL[0].y);
+		for (var i=1; i<mPosL.length; i++) {
+			ovr.lineTo(mPosL[i].x, mPosL[i].y);
+		}
+		ovr.stroke();
+		merge();
+	}
+	if (painting==1) { /* Eraser */
+		ovr.clearRect(0, 0, overlay.width, overlay.height);
+		for (var i=1; i<mPosL.length; i++) {
+			can.clearRect(mPosL[i].x-8, mPosL[i].y-8, 16, 16);
+			can.clearRect(((mPosL[i-1].x-8)+(mPosL[i].x-8))*.5, ((mPosL[i-1].y-8)+(mPosL[i].y-8))*.5, 16, 16);
+		}
+	}
+	if (painting==2) { /* Bucket */
+		can.strokeStyle="";
+		can.lineWidth=0;
+		can.fillStyle=document.getElementById("fillColor").value;
+		var olderMPosX=mPosX;
+		var olderMPosY=mPosY;
+		var imgData=can.getImageData(0, 0, mainCan.width, mainCan.height).data;
+		var oldCol=[imgData[pixelToCanvas(mPosX, mPosY)], imgData[pixelToCanvas(mPosX, mPosY)+1], imgData[pixelToCanvas(mPosX, mPosY)+2], imgData[pixelToCanvas(mPosX, mPosY)+3]];
+		for (var rep=0; rep<10; rep++) {
+			var oldMPosX=mPosX;
+			var oldMPosY=mPosY;
+			for (var i=0; i<500000; i++) {
+				if (Math.random()<.5) {
+					if (Math.random()<.5) mPosX++; else mPosX--;
+					if (mPosX>=mainCan.width) mPosX=mainCan.width-1;
+					if (mPosX<0) mPosX=0;
+				}
+				if (Math.random()<.5) {
+					if (Math.random()<.5) mPosY++; else mPosY--;
+					if (mPosY>=mainCan.height) mPosY=mainCan.height-1;
+					if (mPosY<0) mPosY=0;
+				}
+				var c=pixelToCanvas(mPosX, mPosY);
+				var m=true;
+				if (imgData[c+0]!=oldCol[0]) m=false;
+				if (imgData[c+1]!=oldCol[1]) m=false;
+				if (imgData[c+2]!=oldCol[2]) m=false;
+				if (imgData[c+3]!=oldCol[3]) m=false;
+				if (m==false) mPosX=oldMPosX;
+				if (m==false) mPosY=oldMPosY;
+				ovr.fillRect(mPosX, mPosY, 1, 1);
+				oldMPosX=mPosX;
+				oldMPosY=mPosY;
+			}
+			mPosX=olderMPosX;
+			mPosY=olderMPosY;
+		}
+		merge();
+	}
+	if (painting==3) { /* Rectangle*/
+		merge();
+	}
+	painting=-1;
+}
+function appendImg(event) {
+	event.preventDefault();
+	merge();
+	mPosX=event.clientX-8;
+	mPosY=event.clientY-8;
+	if (event.dataTransfer.items) {
+		var rdr=new FileReader();
+		rdr.readAsDataURL(event.dataTransfer.items[0].getAsFile());
+		rdr.onloadend=function(event) {
+			imag.src=event.target.result;
+		}
+	}
+}
+imag.onload=function() {
+	ovr.clearRect(0, 0, overlay.width, overlay.height);
+	ovr.drawImage(imag, mPosX, mPosY);
+	painting=219;
+}
+onmousemove=cursorUpd;
+		</script>
+	</body>
+</html>
