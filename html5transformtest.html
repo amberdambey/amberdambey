@@ -1,0 +1,246 @@
+<html>
+	<head>
+		<style>
+#mainCan {
+	box-shadow:3px 3px 10px #00000080;
+}
+#mainCan:active {
+	box-shadow:3px 3px 10px #00000080 inset;
+}
+		</style>
+	</head>
+	<body>
+		<canvas id="mainCan" width="854" height="480"></canvas>
+		<img id="sprite" src="4e95b833ecad042f6300001b.jfif" style="display:none;" />
+		<script>
+var can=mainCan.getContext("2d");
+
+var oldTime=new Date(Date.now());
+var mainFunc=clickwait;
+var newTime;
+var deltaTime;
+var currentKeys=[];
+var mouseX=0.0;
+var mouseY=0.0;
+var mouseDx=0.0;
+var mouseDy=0.0;
+function upd() {
+	newTime=new Date(Date.now());
+	deltaTime=newTime.getMilliseconds()-oldTime.getMilliseconds();
+	if (deltaTime<=0) deltaTime+=1000;
+	deltaTime=deltaTime/1000.0;
+	
+	can=mainCan.getContext("2d");
+	can.setTransform(1, 0, 0, 1, 0, 0);
+	can.clearRect(0, 0, 854, 480);
+	mainFunc();
+	
+	mouseDx=0.0;
+	mouseDy=0.0;
+	oldTime=newTime;
+	setTimeout(upd, 1);
+}
+setTimeout(upd, 100);
+
+function clickwait() {
+	can.fillStyle="#ff8040";
+	can.fillRect(0, 0, 854, 480);
+	can.fillStyle="#000000";
+	can.strokeStyle="#ffffff";
+	can.lineWidth=2;
+	can.font="72px sans-serif";
+	can.textAlign="center";
+	can.textBaseline="middle";
+	var lines=["JavaScript is required", "", "Click here to start", "the application"];
+	for (var i=0; i<lines.length; i++) {
+		can.fillText(lines[i], 427, 240+((i-((lines.length-1)*.5))*72));
+		can.strokeText(lines[i], 427, 240+((i-((lines.length-1)*.5))*72));
+	}
+	mainCan.onclick=function() {
+		mainFunc=transformtest;
+		/* Lock mouse cursor depending on browser */
+		if    (mainCan.requestPointerLock)    mainCan.requestPointerLock();
+		if (mainCan.mozRequestPointerLock) mainCan.mozRequestPointerLock();
+		mainCan.onclick=function() {}
+	}; /* Extra semicolon because this isn't just declaring a function, it's setting one */
+}
+
+var rotF=0.0;
+var rotE=0.0;
+var rotV=1.0;
+var dst=1.0;
+var dstE=1.0;
+var dstV=1.0;
+var cPosX=427.0;
+var cPosY=240.0;
+var emuMX=50.0;
+var emuMY=50.0;
+var drawSprite=false;
+var oldCPressed=false;
+const affectRegion=.9;
+const solidRegion=.5;
+function transformtest() {
+	can.fillStyle="#ffffff";
+	can.fillRect(0, 0, 854, 480);
+	
+	can.fillStyle="#000000";
+	can.font="22px sans-serif";
+	can.textAlign="left";
+	can.textBaseline="top";
+	can.fillText("This is a simple slime simulation in HTML5 and JavaScript using the transform function.", 0, 0);
+	can.fillText("Press F to lock mouse, press G to enter fullscreen, hold H to view debug", 0, 22);
+	can.fillText("Press C to toggle between sprite and rectangle", 0, 44);
+	
+	if (isKeyPressed("f")) {
+		if    (mainCan.requestPointerLock)    mainCan.requestPointerLock();
+		if (mainCan.mozRequestPointerLock) mainCan.mozRequestPointerLock();
+	}
+	if (isKeyPressed("g")) {
+		mainCan.requestFullscreen();
+	}
+	if (isKeyPressed("c")) {
+		if (!oldCPressed) drawSprite=!drawSprite;
+	}
+	oldCPressed=isKeyPressed("c");
+	emuMX+=mouseDx;
+	emuMY+=mouseDy;
+	// Uncomment the line below to enable the random motion
+	// rotF+=deltaTime*Math.PI*(Math.random()-.5)*5.0;
+	while (rotF>=Math.PI*2) rotF-=Math.PI*2;
+	while (rotF<0) rotF+=Math.PI*2;
+	dst=Math.hypot(emuMX-cPosX, emuMY-cPosY)/100.0;
+	if (dst<1.0) rotF=-Math.atan2(emuMX-cPosX, emuMY-cPosY);
+	if (dst>=1.0) dst=1.0;
+	if (dst<solidRegion) {
+		dst=solidRegion;
+		emuMX=cPosX-(Math.sin(rotF)*dst*100.0);
+		emuMY=cPosY+(Math.cos(rotF)*dst*100.0);
+	}
+	if (dstE<affectRegion) {
+		cPosX+=Math.sin(rotE)*deltaTime*50.0*(1.0/Math.max(dstE, .2));
+		cPosY-=Math.cos(rotE)*deltaTime*50.0*(1.0/Math.max(dstE, .2));
+		emuMX=(emuMX*(1-(deltaTime*.1)))+((emuMX-(Math.sin(rotF)*dst*100.0))*(deltaTime*.1));
+		emuMY=(emuMY*(1-(deltaTime*.1)))+((emuMY+(Math.cos(rotF)*dst*100.0))*(deltaTime*.1));
+	}
+	
+	dstV=dstV*(1-Math.min(deltaTime*12.0, 1.0));
+	dstV+=deltaTime*20.0*(dst-dstE);
+	dstE+=deltaTime*20.0*(dstV);
+	
+	rotF+=Math.PI-rotE;
+	while (rotF>=Math.PI*2) rotF-=Math.PI*2;
+	while (rotF<0) rotF+=Math.PI*2;
+	while (rotE>=Math.PI*2) rotE-=Math.PI*2;
+	while (rotE<0) rotE+=Math.PI*2;
+	rotF-=Math.PI-rotE;
+	
+	rotV=rotV*(1-Math.min(deltaTime*12.0, 1.0));
+	rotV+=deltaTime*20.0*(rotF-rotE);
+	rotE+=deltaTime*20.0*(rotV);
+	
+	can.fillStyle="#000000";
+	can.translate(cPosX, cPosY);
+	can.rotate(rotE);
+	can.scale(1/dstE, dstE);
+	can.rotate(-rotE);
+	can.fillRect(-60, -60, 120, 120);
+	if (drawSprite) can.drawImage(sprite, -200, -150);
+	
+	can.fillStyle="#ffffff";
+	can.strokeStyle="#000000";
+	can.lineWidth=1.0;
+	can.setTransform(1, 0, 0, 1, 0, 0);
+	can.translate(Math.floor(emuMX)+.5, Math.floor(emuMY)+.5);
+	can.beginPath();
+	can.moveTo(0, 0);
+	can.lineTo(15, 15);
+	can.lineTo(8, 15);
+	can.lineTo(13, 25);
+	can.lineTo(10, 25);
+	can.lineTo(5, 15);
+	can.lineTo(0, 20);
+	can.closePath();
+	can.fill();
+	can.stroke();
+	
+	if (isKeyPressed("H")) {
+		can.fillStyle="#ff0000";
+		can.setTransform(1, 0, 0, 1, 0, 0);
+		can.translate(cPosX, cPosY);
+		can.rotate(rotE);
+		can.fillRect(-.5, 0, 1, 50.0/dstE);
+		
+		can.fillStyle="#ffff00";
+		can.setTransform(1, 0, 0, 1, 0, 0);
+		can.translate(cPosX, cPosY);
+		can.rotate(-Math.atan2(emuMX-cPosX, emuMY-cPosY));
+		can.fillRect(-.5, 0, 1, dst*100.0);
+		
+		can.fillStyle="#00ff00";
+		can.setTransform(1, 0, 0, 1, 0, 0);
+		can.translate(cPosX, cPosY);
+		can.rotate(rotF+Math.PI);
+		can.fillRect(-.5, 0, 1, dst*100.0);
+		
+		can.fillStyle="#000000";
+		can.setTransform(1, 0, 0, 1, 0, 0);
+		can.font="22px sans-serif";
+		can.textAlign="left";
+		can.textBaseline="top";
+		can.fillText((-Math.sin(rotF)*(1-dstE)).toFixed(3)+" "+(Math.cos(rotF)*(1-dstE)).toFixed(3), 0, 66);
+		
+		can.strokeStyle="#0000ff";
+		can.lineWidth=1;
+		can.setTransform(1, 0, 0, 1, 0, 0);
+		can.beginPath();
+		can.arc(cPosX, cPosY, 100.0, 0, Math.PI*2.0);
+		can.stroke();
+		can.strokeStyle="#00ff00";
+		can.beginPath();
+		can.arc(cPosX, cPosY, 100.0*affectRegion, 0, Math.PI*2.0);
+		can.stroke();
+		can.strokeStyle="#ff0000";
+		can.beginPath();
+		can.arc(cPosX, cPosY, 100.0*solidRegion, 0, Math.PI*2.0);
+		can.stroke();
+	}
+}
+
+// System functions
+function rgb(r, g, b) {
+	return "rgb("+r+","+g+","+b+")";
+}
+function rgba(r, g, b, a) {
+	return "rgb("+r+","+g+","+b+","+a+")";
+}
+function isKeyPressed(key) {
+	return (currentKeys.findIndex(function(t) {if (t==" ") t="Space";  return t.toLowerCase()==key.toLowerCase();})>=0);
+}
+
+onmousemove=function(event) {
+	if (window.event) event=window.event;
+	mouseDx=event.movementX;
+	mouseDy=event.movementY;
+	if ((event.clientX>=(854+8)) || (event.clientX<8) || (event.clientY>=(480+8)) || (event.clientY<8)) return;
+	mouseX=event.clientX-8;
+	mouseY=event.clientY-8;
+}
+onkeydown=function(event) {
+	if (window.event) event=window.event;
+	if (currentKeys.findIndex(function(t) {return t.toLowerCase()==event.key.toLowerCase();})==-1) {
+		currentKeys.length++;
+		currentKeys[currentKeys.length-1]=event.key;
+	}
+}
+onkeyup=function(event) {
+	if (window.event) event=window.event;
+	var ind=currentKeys.findIndex(function(t) {return t.toLowerCase()==event.key.toLowerCase();});
+	if (ind==-1) {
+		return;
+	} else {
+		currentKeys=currentKeys.slice(0, ind).concat(currentKeys.slice(ind+1, currentKeys.length));
+	}
+}
+		</script>
+	</body>
+</html>
