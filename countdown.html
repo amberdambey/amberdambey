@@ -1,0 +1,79 @@
+<html>
+	<head>
+		<title>New Year Countdown</title>
+		<meta name="description" content="Countdown for New Year's Day 2023" />
+		<meta name="viewport" content="width=320,initial-scale=1" />
+	</head>
+	<body style="margin:0;background-color:#000000;">
+		<center>
+		<h1 id="hello" style="top:50%;position:absolute;transform:translate(0px, -24px);width:100%;font-family:sans-serif;font-size:200px;margin-top:.5em;">=</h1>
+		<script>
+			var endYear=new Date(); // Create a new date
+			endYear.setFullYear(2023, 0, 1); // Set it to January (0) 1st (1) of 2023
+			endYear.setHours(0, 0, 0, 0); // Set it to 0 hours 0 minutes 0 seconds and 0 milliseconds (midnight)
+			var targetTime=Math.ceil(endYear.getTime()/1000.0)*1000; // Set the target time to it truncated on the thousands digit
+			if (false) targetTime++; // Set to TRUE for years with POSITIVE leap seconds
+			if (false) targetTime--; // Set to TRUE for years with NEGATIVE leap seconds
+			//targetTime=Math.ceil((new Date().getTime()/1000.0)+30)*1000.0;
+			var colorTimer=0.0;
+			var oldSLeft=0;
+			var r=0.0;
+			var g=0.0;
+			var b=0.0;
+			
+			function frame() {
+				var nowTime=Math.floor(new Date().getTime()/1000.0)*1000;
+				var sLeft=(targetTime-nowTime)/1000;
+				if (sLeft>0) hello.innerHTML=sLeft;
+				if (sLeft<=0) hello.innerHTML="HAPPY<br>NEW<br>YEAR!";
+				
+				colorTimer+=0.016;
+				if (sLeft>13) r=Math.sin(colorTimer*1.48375871623);
+				if (sLeft>13) g=Math.sin(colorTimer*2.15617369840);
+				if (sLeft>13) b=Math.sin(colorTimer*1.88135678139);
+				if (sLeft>9 && r>-0.9) r=Math.sin(colorTimer*1.48375871623);
+				if (sLeft>9 && g>-0.9) g=Math.sin(colorTimer*2.15617369840);
+				if (sLeft>9 && b>-0.9) b=Math.sin(colorTimer*1.88135678139);
+				if (sLeft<10 && sLeft!=oldSLeft) r=2;
+				if (sLeft<10 && sLeft!=oldSLeft) g=1;
+				if (sLeft<10 && sLeft!=oldSLeft) b=0;
+				if (sLeft<1) r=1;
+				if (sLeft<1) g=-1;
+				if (sLeft<1) b=0;
+				if (sLeft<1 && colorTimer<0.1) r=-1;
+				if (sLeft<1 && colorTimer<0.1) g=1;
+				if (sLeft<1 && colorTimer>0.2) colorTimer-=.2;
+				if (sLeft<5 && sLeft>0) colorTimer=Math.random();
+				if (sLeft<10) r-=0.064;
+				if (sLeft<10) g-=0.064;
+				if (sLeft<10) b-=0.064;
+				var R=Math.floor((r+1)*128);
+				var G=Math.floor((g+1)*128);
+				var B=Math.floor((b+1)*128);
+				document.body.style.backgroundColor="rgb("+R+","+G+","+B+")";
+				R=255-R;
+				G=255-G;
+				B=255-B;
+				var fs=100;
+				if (sLeft<1000000) fs=200;
+				if (sLeft<100000) fs=240;
+				if (sLeft<10000) fs=280;
+				if (sLeft<1000) fs=320;
+				if (sLeft<100) fs=400;
+				if (sLeft<10) fs=800;
+				if (sLeft<1) fs=400;
+				var fS=fs*1.2;
+				if (sLeft<1) fs=200;
+				hello.style.color="rgb("+R+","+G+","+B+")";
+				hello.style.fontSize=Math.floor((fs/1080)*window.innerHeight)+"px";
+				hello.style.transform="translate(0px, -"+fS+"px)";
+				hello.style.webkitTransform="translate(0px, -"+fS+"px)";
+				
+				oldSLeft=sLeft;
+				
+				setTimeout(frame, 16);
+			}
+			setTimeout(frame, 100);
+		</script>
+	</body>
+</html>
