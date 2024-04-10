@@ -386,9 +386,9 @@ function generateShareCodeURL() {
 		rawNums.push(nums[i].val);
 	}
 	var sc=btoa(JSON.stringify(rawNums));
-	sc=sc.replace("+", "-");
-	sc=sc.replace("/", "_");
-	sc=sc.replace("=", ".");
+	sc=sc.replaceAll("+", "-");
+	sc=sc.replaceAll("/", "_");
+	sc=sc.replaceAll("=", ".");
 	
 	orgString+=sc;
 	prompt("Copy this URL: ", orgString);
@@ -406,9 +406,9 @@ function restoreShareCodeURL(urlQuery) {
 	}
 	
 	// Decode the SC value
-	sc=sc.replace("-", "+");
-	sc=sc.replace("_", "/");
-	sc=sc.replace(".", "=");
+	sc=sc.replaceAll("-", "+");
+	sc=sc.replaceAll("_", "/");
+	sc=sc.replaceAll(".", "=");
 	var rawNums=JSON.parse(atob(sc));
 	clearAll();
 	for (var i=0; i<rawNums.length; i++) {
