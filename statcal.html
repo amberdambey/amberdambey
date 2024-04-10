@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html style="color-scheme:dark;">
+	<head>
+		<title>Statistical Analyzer</title>
+		<meta name="author" content="AmberDambey Software" />
+		<meta name="description" content="Calculate statistical properties of a list of numbers" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><!-- CORS in web browsers is stupid -->
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" />
+		<style>
+/*@font-face {
+	font-family:"Ubuntu";
+	format:woff;
+	src:url(font.woff);
+}*/
+@keyframes grow {
+	0% {
+		transform:scale(0.0);
+		opacity:0%;
+		margin-bottom:-15px;
+		margin-top:-4px;
+	}
+	100% {
+		transform:scale(1.0);
+		opacity:100%;
+		margin-bottom:10px;
+		margin-top:0px;
+	}
+}
+@keyframes fade {
+	0% {
+		transform:scale(1.0);
+		opacity:100%;
+		margin-bottom:10px;
+		margin-top:0px;
+	}
+	100% {
+		transform:scale(0.0);
+		opacity:0%;
+		margin-bottom:-15px;
+		margin-top:-4px;
+	}
+}
+body {
+	font-size:16px;
+	background-color:rgb(28,27,34);
+	color:#ffffff;
+	font-family:ubuntu, "Ubuntu", "DejaVu Sans", fantasy, sans-serif;
+	text-align:center;
+	margin-top:0px;
+}
+a {
+	color:rgb(140,140,255);
+}
+a:active {
+	color:rgb(255,102,102);
+}
+input {
+	background-color:rgb(43,42,51);
+	color:#ffffff;
+	font-family:ubuntu, "Ubuntu", "DejaVu Sans", fantasy, sans-serif;
+	border-radius:3px;
+	border-width:1px;
+	border-color:rgb(143,143,157);
+	border-style:solid;
+	padding-left:5px;
+	padding-right:5px;
+	padding-top:2px;
+	padding-bottom:2px;
+}
+input:hover {
+	background-color:rgb(96,95,102);
+	border-color:rgb(143,143,157);
+}
+input:active {
+	background-color:rgb(150,149,154);
+	border-color:rgb(143,143,157);
+}
+input:focus {
+	outline-width:1px;
+	outline-style:solid;
+	outline-color:#ffffff;
+}
+.numV:hover {
+	background-color:rgb(64,64,68);
+	border-color:rgb(143,143,157);
+}
+.numV:active {
+	background-color:rgb(64,64,68);
+	border-color:rgb(143,143,157);
+}
+.subtitle {
+	color:rgba(255,255,255,.5);
+}
+li {
+	margin-bottom:10px;
+	animation:grow;
+	animation-duration:.5s;
+	animation-iteration-count:1;
+	transition-duration:.5s;
+	transition-property:font-size;
+	font-size:16px;
+}
+.chosen_one {
+	font-size:24px;
+	text-shadow:0px 0px 8px #ffff00, 0px 0px 8px #ffff00;
+}
+		</style>
+	</head>
+	<body>
+		<noscript><h2>JavaScript is required for basic functionality. Please enable JavaScript in your browser or use a browser which supports it.</h2></noscript>
+		<h1>Statistical Analyzer</h1><hr />
+		<i class="subtitle">Input a sequence of numbers below</i><br /><br />
+		<form action="javascript:void(0)" method="" onsubmit="handleSubmitEvent();">
+			<input type="text" class="numV" placeholder="1.00, 2.00, 3.00" step="0.01" style="font-size:22px;" id="numField" />
+			<input type="submit" style="font-size:22px;" value="Add" />
+		</form>
+		<p class="subtitle" id="instruction">
+			Input 1 or more number(s) at a time, separated with commas. Example: 3.05, 4.61, 5.35, -4.14068, 5, 10.0<br />
+			Click [Add] or press Enter to insert and sort the numbers into the list.<br />
+			[Remove All] clears the entire list and resets the stats.<br />
+			[Generate Sample Data] randomly chooses a mean and range, then generates 20 random values with those properties. <i><u>This will clear the list.</u></i><br />
+			[Extend Sample Data] uses the stats for the current list to generate an additional 20 random values which are statistically similar to the values currently in the list.<br />
+			[Select Random Entry] picks a random number in the list and shows it.
+		</p><br /><br />
+		<input type="button" style="font-size:22px;" value="Remove All" id="clearBtn" onclick="clearAll();" />
+		<input type="button" style="font-size:22px;" value="Generate Sample Data" id="randomBtn" onclick="generateSample();" />
+		<input type="button" style="font-size:22px;" value="Extend Sample Data" id="insertRandomBtn" onclick="insertRandomSample();" />
+		<input type="button" style="font-size:22px;" value="Select Random Entry" id="chooseRandomBtn" onclick="selectRandom();" />
+		<p id="stats"></p>
+		<p id="simpleStats" aria-hidden="true"></p>
+		<ul id="numlist">
+		</ul>
+		<input type="button" style="font-size:22px;" value="Share as URL" id="saveUrlBtn" onclick="generateShareCodeURL();" />
+		<script>
+const numlist=document.getElementById("numlist");
+var nums=[];
+var excludedNums=[];
+var stats={count:0,rangeMin:0.0,rangeMax:0.0,range:0.0,stDev:0.0,sigma:0.0,mean:0.0,median:0.0,mode:0.0};
+
+function numEntry(val) {
+	this.val=val;
+	this.elm=undefined;
+	this.valString=val.toFixed(2);
+}
+
+// Recalculate the stats
+function updateStats() {
+	var ct=nums.length;
+	if (ct==0) {
+		stats.count=0;
+		stats.rangeMin=0.0;
+		stats.rangeMax=0.0;
+		stats.range=0.0;
+		stats.stDev=0.0;
+		stats.sigma=0.0;
+		stats.mean=0.0;
+		stats.median=0.0;
+		stats.mode=0.0;
+	} else {
+		// count
+		stats.count=ct;
+		
+		// rangeMin and rangeMax
+		stats.rangeMin=nums[0].val;
+		stats.rangeMax=nums[ct-1].val;
+		
+		// range
+		stats.range=stats.rangeMax-stats.rangeMin;
+		
+		// median
+		if ((ct%2)==1) {
+			stats.median=nums[Math.floor(ct/2)].val;
+		} else {
+			stats.median=(nums[Math.floor(ct/2)-1].val+nums[Math.floor((ct/2))].val)*.5;
+		}
+		
+		// mean
+		var mn=0.0;
+		for (var i=0; i<nums.length; i++) {
+			mn+=nums[i].val;
+		}
+		mn/=nums.length*1.0;
+		stats.mean=mn;
+		
+		// sigma
+		var sg=0.0;
+		for (var i=0; i<nums.length; i++) {
+			sg+=(nums[i].val-mn)*(nums[i].val-mn);
+		}
+		sg/=nums.length*1.0;
+		stats.sigma=sg;
+		
+		// stDev
+		stats.stDev=Math.sqrt(sg);
+		
+		// mode
+		var occQt=0;
+		var occMm=0.0;
+		var occQtMax=0;
+		var occMmMax=0.0;
+		for (var i=0; i<nums.length; i++) {
+			if (nums[i].val==occMm) {
+				occQt++;
+			} else {
+				occQt=1;
+				occMm=nums[i].val;
+			}
+			if (occQt>occQtMax) {
+				occQtMax=occQt;
+				occMmMax=nums[i].val;
+			}
+		}
+		stats.mode=occMmMax;
+	}
+	
+	// Reformat the display
+	document.getElementById("stats").innerText="Count: "+stats.count+" | Range: "+stats.rangeMin.toFixed(2)+" to "+stats.rangeMax.toFixed(2)+" ("+stats.range.toFixed(3)+") | Standard Deviation: "+stats.stDev.toFixed(3)+" (Sigma: "+stats.sigma.toFixed(3)+") | Mean: "+stats.mean.toFixed(3)+" | Median: "+stats.median.toFixed(2)+" | Mode: "+stats.mode.toFixed(2)+"";
+	document.getElementById("simpleStats").innerText="";
+}
+
+// Add a single number from a string of text
+function insertNumber(text) {
+	var val=parseFloat(text);
+	if (val!=val) {
+		return;
+	}
+	
+	var ind=0;
+	var num=new numEntry(val);
+	num.elm=document.createElement("li");
+	num.elm.innerHTML=num.valString+" (<a href=\"javascript:void(0)\">Remove</a>)";
+	num.elm.children[0].addEventListener("click", removeNumberTrgOnly);
+	// Insertion sort
+	for (var i=0; i<=nums.length; i++) {
+		if (i==nums.length) {
+			nums.splice(i, 0, num);
+			ind=i;
+			break;
+		}
+		if (nums[i].val>=val) {
+			nums.splice(i, 0, num);
+			ind=i;
+			break;
+		}
+	}
+	
+	if (ind==0) {
+		numlist.insertAdjacentElement("afterBegin", num.elm);
+	} else {
+		nums[ind-1].elm.insertAdjacentElement("afterEnd", num.elm);
+	}
+}
+
+// Add multiple numbers from a comma separated string of numbers as text
+function insertMulti(text) {
+	var th=text.split(",");
+	for (var i=0; i<th.length; i++) {
+		insertNumber(th[i]);
+	}
+	updateStats();
+}
+
+// Clear everything
+function clearAll() {
+	// Pop them in reverse
+	for (var i=nums.length-1; i>=0; i--) {
+		removeNumber(i);
+	}
+}
+
+// Generate random sample data
+function generateSample() {
+	// Ensure everything is fresh
+	clearAll();
+	
+	// Pick a fake mean and 2 spread values
+	var fakeMean=Math.floor(Math.random()*50000)*.01;
+	var spread1=Math.floor(Math.random()*8000)*.01;
+	var spread2=Math.floor(Math.random()*8000)*.01;
+	
+	// Generate!
+	for (var i=0; i<20; i++) {
+		var rng=fakeMean+0.00;
+		rng+=spread1*(Math.random()-.5)*2.0;
+		rng+=spread2*(Math.random()-.5)*2.0;
+		rng=Math.round(rng*100.0)*.01;
+		insertNumber(rng+"");
+	}
+	updateStats();
+}
+
+// Insert random sample data with the properties of the existing data
+function insertRandomSample() {
+	// Generate!
+	for (var i=0; i<20; i++) {
+		var spread=Math.sqrt(Math.log(1.0-Math.random())*-2.0)*Math.sin(Math.random()*Math.PI*2.0);
+		var rng=stats.mean+(spread*stats.stDev);
+		rng=Math.round(rng*100.0)*.01;
+		insertNumber(rng+"");
+	}
+	updateStats();
+}
+
+// Select a random data entry
+function selectRandom() {
+	var rng=Math.floor(Math.random()*nums.length);
+	var num=nums[rng];
+	num.elm.scrollIntoView({behavior:"smooth",block:"center"});
+	num.elm.classList.add("chosen_one");
+	setTimeout(function() {
+		//for (var i=0; i<nums.length; i++) {
+			num.elm.classList.remove("chosen_one");
+		//}
+	}, 5000);
+}
+
+// for triggers only
+function removeNumberTrgOnly(e) {
+	// Event object disambiguation
+	var ev=window.event;
+	if (ev==undefined) ev=e;
+	
+	// Search for the number entry which matches the element's parent
+	var ind=-1;
+	for (var i=0; i<nums.length; i++) {
+		if (nums[i].elm==ev.target.parentElement) {
+			ind=i;
+			break;
+		}
+	}
+	
+	removeNumber(ind);
+}
+
+// Remove the number at index ind
+function removeNumber(ind) {
+	var num=nums[ind];
+	
+	// Move it from nums to excludedNums
+	excludedNums.push(nums.splice(ind, 1)[0]);
+	
+	// Update stats
+	updateStats();
+	
+	// Smooth fade
+	num.elm.style.animationName="fade";
+	num.elm.children[0].removeEventListener("click", removeNumberTrgOnly);
+	
+	// Remember to delete it!
+	setTimeout(actuallyRemoveNumber, 450);
+}
+function actuallyRemoveNumber() {
+	for (var i=0; i<excludedNums.length; i++) {
+		excludedNums[i].elm.remove();
+	}
+}
+function handleSubmitEvent() {
+	// Detect if the input is parseable
+	try {
+		insertMulti(document.getElementById("numField").value);
+		document.getElementById("numField").value="";
+	} catch (exc) {
+		// Yell at the user
+		alert("Something bad happened.\n\n"+exc);
+		throw exc;
+		return;
+	}
+}
+
+
+
+// Generate a URL
+function generateShareCodeURL() {
+	var orgString=window.location.href;
+	if (window.location.href.indexOf("?")>-1) {
+		orgString=window.location.href.split("?")[0];
+	}
+	
+	orgString+="?sc=";
+	
+	// Generate the SC value
+	var rawNums=[];
+	for (var i=0; i<nums.length; i++) {
+		rawNums.push(nums[i].val);
+	}
+	var sc=btoa(JSON.stringify(rawNums));
+	sc=sc.replace("+", "-");
+	sc=sc.replace("/", "_");
+	sc=sc.replace("=", ".");
+	
+	orgString+=sc;
+	prompt("Copy this URL: ", orgString);
+}
+
+// Restore a URL
+function restoreShareCodeURL(urlQuery) {
+	urlQuery=urlQuery.split("?")[1];
+	var queries=urlQuery.split("&");
+	var sc="";
+	for (var i=0; i<queries.length; i++) {
+		if (queries[i].startsWith("sc=")) {
+			sc=queries[i].split("=")[1];
+		}
+	}
+	
+	// Decode the SC value
+	sc=sc.replace("-", "+");
+	sc=sc.replace("_", "/");
+	sc=sc.replace(".", "=");
+	var rawNums=JSON.parse(atob(sc));
+	clearAll();
+	for (var i=0; i<rawNums.length; i++) {
+		insertNumber(rawNums[i]+"");
+	}
+	updateStats();
+}
+
+restoreShareCodeURL(window.location.href);
+		</script>
+	</body>
+</html>
