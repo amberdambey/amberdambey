@@ -107,6 +107,26 @@ li {
 	font-size:24px;
 	text-shadow:0px 0px 8px #ffff00, 0px 0px 8px #ffff00;
 }
+
+.graphBox {
+	display:inline;
+	background-color:#404040;
+	box-shadow:3px 3px 10px #00000080;
+	margin-left:20px;
+	margin-right:20px;
+}
+.graphHScroll {
+	display:flex;
+	position:fixed;
+	left:0px;
+	top:0px;
+	width:100%;
+	height:100%;
+	background-color:#80808080;
+	overflow-x:scroll;
+	vertical-align:middle;
+	align-items:center;
+}
 		</style>
 	</head>
 	<body>
@@ -134,11 +154,15 @@ li {
 		<ul id="numlist">
 		</ul>
 		<input type="button" style="font-size:22px;" value="Share as URL" id="saveUrlBtn" onclick="generateShareCodeURL();" />
+		<input type="button" style="font-size:22px;" value="Share as List" id="saveUrlBtn" onclick="showNumsList();" /><br /><br />
+		<div id="graphContainer"><a href="javascript:void(0)" id="graphFullscreenBtn"><canvas id="graph" width="500" height="350" class="graphBox"></canvas></a></div><br />
+		<p id="canvasCaption"></p>
 		<script>
 const numlist=document.getElementById("numlist");
 var nums=[];
 var excludedNums=[];
-var stats={count:0,rangeMin:0.0,rangeMax:0.0,range:0.0,stDev:0.0,sigma:0.0,mean:0.0,median:0.0,mode:0.0};
+var stats={count:0,rangeMin:0.0,rangeMax:0.0,range:0.0,stDev:0.0,sigma:0.0,mean:0.0,median:0.0,mode:0.0,modeTotal:0,shortestStep:10.0};
+var graphEnlarged=false;
 
 function numEntry(val) {
 	this.val=val;
@@ -159,6 +183,7 @@ function updateStats() {
 		stats.mean=0.0;
 		stats.median=0.0;
 		stats.mode=0.0;
+		stats.modeTotal=0;
 	} else {
 		// count
 		stats.count=ct;
@@ -201,11 +226,15 @@ function updateStats() {
 		var occMm=0.0;
 		var occQtMax=0;
 		var occMmMax=0.0;
+		stats.shortestStep=.5;
 		for (var i=0; i<nums.length; i++) {
 			if (nums[i].val==occMm) {
 				occQt++;
 			} else {
 				occQt=1;
+				if (Math.abs(nums[i].val-occMm)<stats.shortestStep) {
+					stats.shortestStep=Math.abs(nums[i].val-occMm);
+				}
 				occMm=nums[i].val;
 			}
 			if (occQt>occQtMax) {
@@ -214,19 +243,189 @@ function updateStats() {
 			}
 		}
 		stats.mode=occMmMax;
+		stats.modeTotal=occQtMax;
 	}
 	
 	// Reformat the display
 	document.getElementById("stats").innerText="Count: "+stats.count+" | Range: "+stats.rangeMin.toFixed(2)+" to "+stats.rangeMax.toFixed(2)+" ("+stats.range.toFixed(3)+") | Standard Deviation: "+stats.stDev.toFixed(3)+" (Sigma: "+stats.sigma.toFixed(3)+") | Mean: "+stats.mean.toFixed(3)+" | Median: "+stats.median.toFixed(2)+" | Mode: "+stats.mode.toFixed(2)+"";
 	document.getElementById("simpleStats").innerText="";
+	
+	// Draw the graph
+	drawGraph();
+}
+
+// Draw the graph
+function drawGraph() {
+	var can=document.getElementById("graph").getContext("2d");
+	var visRes=window.devicePixelRatio; /* DPI Scaling */
+	
+	// Calculate bounds
+	var graphXOffset=stats.rangeMin-3.0;
+	var graphWidth=stats.range+6.0;
+	var graphHeight=(300.0/(stats.modeTotal+1.0))*stats.modeTotal;
+	var graphPeak=300.0/(stats.modeTotal+1.0);
+	var graphlineWidth=stats.shortestStep;
+	if (graphlineWidth>=.02) graphlineWidth-=.01;
+	if (Math.floor(graphWidth*100.0*visRes)>32767) {
+		can.canvas.width=600.0;
+		can.canvas.height=350.0;
+		can.canvas.style.width="600px";
+		can.canvas.style.height="350px";
+		document.getElementById("canvasCaption").innerText="The graph is too big to be displayed. Try lowering the range of your data.";
+		can.setTransform(1, 0, 0, 1, 50, 0);
+		can.globalAlpha=1.0;
+		can.globalCompositeOperation="source-over";
+		can.clearRect(0, 0, can.canvas.width, can.canvas.height);
+		var grad=can.createRadialGradient(250, 350, 0, 250, 350, 431);
+		grad.addColorStop(0.0, "#ff8080");
+		grad.addColorStop(1.0, "#800000");
+		can.fillStyle=grad;
+		can.fillRect(0, 0, 500, 350);
+		grad=can.createRadialGradient(250, -100, 0, 250, -100, 515);
+		grad.addColorStop(0.0, "#cacaca");
+		grad.addColorStop(0.55, "#ffffff");
+		grad.addColorStop(0.56, "#cacaca");
+		grad.addColorStop(1.0, "#808080");
+		can.fillStyle=grad;
+		can.font="bold 60px Ubuntu";
+		can.textAlign="center";
+		can.textBaseline="middle";
+		can.shadowColor="#000000ff";
+		can.shadowBlur=8;
+		can.shadowOffsetX=3;
+		can.shadowOffsetY=3;
+		can.fillText("Graph too big!", 250, 165);
+		can.font="bold 22px Ubuntu";
+		can.fillText("Try lowering the range of your data.", 250, 213);
+		can.shadowColor="#00000000";
+		can.shadowBlur=0;
+		can.shadowOffsetX=0;
+		can.shadowOffsetY=0;
+		return;
+	}
+	
+	// Calculate gridline spacing
+	var gridSpacing=1;
+	
+	// Clear the previous graph
+	can.canvas.width=Math.floor(graphWidth*100.0*visRes);
+	can.canvas.height=Math.floor(350.0*visRes);
+	can.canvas.style.width=Math.floor(graphWidth*100.0).toString()+"px"; /* DPI Scaling */
+	can.canvas.style.height="350px"; /* DPI Scaling */
+	document.getElementById("canvasCaption").innerText="";
+	if ((graphWidth*100.0)>=(window.innerWidth-70.0)) {
+		if (!graphEnlarged) {
+			can.canvas.style.width=Math.floor(window.innerWidth-70.0).toString()+"px";
+			can.canvas.style.height=Math.floor((350/(graphWidth*100.0))*(window.innerWidth-70.0)).toString()+"px"; /* TODO: clean this up */
+		}
+		document.getElementById("canvasCaption").innerText="Click on the graph to enlarge it";
+	}
+	can.setTransform(1, 0, 0, 1, 0, 0);
+	can.scale(visRes, visRes); /* DPI Scaling */
+	can.globalAlpha=1.0;
+	can.globalCompositeOperation="source-over";
+	can.clearRect(0, 0, can.canvas.width, can.canvas.height);
+	
+	// Transform!!!
+	can.translate(-graphXOffset*100.0, 0.0);
+	
+	// Draw gridlines
+	can.fillStyle="#606060";
+	can.lineWidth=1.0;
+	can.strokeStyle="#808080";
+	can.beginPath();
+	for (var i=Math.floor(graphXOffset/gridSpacing)*gridSpacing; i<(Math.ceil(graphXOffset/gridSpacing)*gridSpacing)+graphWidth; i+=gridSpacing) {
+		can.moveTo(i*100.0, 0.0);
+		can.lineTo(i*100.0, 350.0);
+	}
+	can.stroke();
+	
+	// Draw gridline markers
+	can.font="16px sans-serif";
+	can.textAlign="center";
+	can.textBaseline="middle";
+	can.fillStyle="#ffffff";
+	for (var i=Math.floor(graphXOffset/gridSpacing)*gridSpacing; i<(Math.ceil(graphXOffset/gridSpacing)*gridSpacing)+graphWidth; i+=gridSpacing) {
+		can.fillText(i.toFixed(2), i*100.0, 20);
+	}
+	
+	// Draw graphlines
+	var occQt=0;
+	var occMm=0.0;
+	for (var i=0; i<=nums.length; i++) {
+		// some js engines will evaluate 'a || b' by evaluating 'a' and 'b' separately. this code is ugly, but it avoids throwing a TypeError like the crappy v8 engine which chromium browsers use >:(
+		var keepGoing=false;
+		if (i==nums.length) keepGoing=false; else {
+			keepGoing=nums[i].val==occMm;
+		}
+		if (keepGoing) {
+			// Keep going
+			if ((occMm>=-83886.08) && (occMm<83886.08)) occQt++; else occQt=0;
+		} else {
+			// Stop to plot
+			can.fillRect((occMm*100.0)-(graphlineWidth*50.0), 50.0, graphlineWidth*100.0, (occQt*1.0)*graphPeak);
+			console.log((occQt*1.0)*graphPeak);
+			// Reset occurance quantity and memory
+			occQt=1;
+			if (i<nums.length) occMm=nums[i].val;
+		}
+	}
+	
+	// Draw bellcurve
+	var bellCurve=[1.000, 0.995, 0.980, 0.956, 0.923, 0.882, 0.835, 0.783, 0.726, 0.667, 0.607, 0.546, 0.487, 0.430, 0.375, 0.325, 0.278, 0.236, 0.198, 0.164, 0.135, 0.110, 0.089, 0.071, 0.056, 0.044, 0.034, 0.026, 0.020, 0.015, 0.010, 0.009, 0.008, 0.007, 0.006, 0.005, 0.004, 0.003, 0.002, 0.001, 0.000];
+	var stDev=stats.stDev;
+	var mean=stats.mean;
+	
+	can.lineWidth=1.0;
+	can.strokeStyle="#00ff00";
+	
+	// Right half
+	can.beginPath();
+	can.moveTo(mean*100.0, graphHeight+50.0);
+	for (var i=0; i<bellCurve.length; i++) {
+		can.lineTo((mean*100.0)+(stDev*10.0*i), (bellCurve[i]*graphHeight)+50.0);
+	}
+	can.stroke();
+	
+	// Left half
+	can.beginPath();
+	can.moveTo(mean*100.0, graphHeight+50.0);
+	for (var i=0; i<bellCurve.length; i++) {
+		can.lineTo((mean*100.0)-(stDev*10.0*i), (bellCurve[i]*graphHeight)+50.0);
+	}
+	can.stroke();
+}
+
+// Toggle between showing the fullscreen graph and the mini-graph
+function showFullGraph() {
+	var canvas=document.getElementById("graph");
+	var container=document.getElementById("graphContainer");
+	
+	graphEnlarged=!graphEnlarged;
+	drawGraph();
+	
+	if (graphEnlarged) {
+		container.classList.add("graphHScroll");
+	} else {
+		container.classList.remove("graphHScroll");
+	}
 }
 
 // Add a single number from a string of text
 function insertNumber(text) {
+	if (nums.length>=3000) {
+		alert("Max limit is 3000 entries!");
+		undefined[0];
+		return;
+	}
+	
 	var val=parseFloat(text);
 	if (val!=val) {
 		return;
 	}
+	
+	// Round val to the nearest .01 (consistent with graphs and list)
+	val=Math.round(val*100.0)*.01;
 	
 	var ind=0;
 	var num=new numEntry(val);
@@ -256,7 +455,18 @@ function insertNumber(text) {
 
 // Add multiple numbers from a comma separated string of numbers as text
 function insertMulti(text) {
+	if (text.startsWith("[")) {text=text.substr(1, text.length-1);}
 	var th=text.split(",");
+	if (th.length>999) {
+		if (!confirm("Really import "+th.length+" entries!?")) {
+			return;
+		}
+	}
+	if ((th.length+nums.length)>999) {
+		if (!confirm("Importing more than 1000 entries causes performance issues. Refresh the browser tab if you can't clear all. Is this OK?")) {
+			return;
+		}
+	}
 	for (var i=0; i<th.length; i++) {
 		insertNumber(th[i]);
 	}
@@ -265,9 +475,20 @@ function insertMulti(text) {
 
 // Clear everything
 function clearAll() {
-	// Pop them in reverse
-	for (var i=nums.length-1; i>=0; i--) {
-		removeNumber(i);
+	// Check if it's worth animating them
+	if (nums.length>=70) {
+		// Clear them instantly!
+		excludedNums=nums;
+		nums=[];
+		actuallyRemoveNumber();
+		
+		// can't forget
+		updateStats();
+	} else {
+		// Pop them in reverse
+		for (var i=nums.length-1; i>=0; i--) {
+			removeNumber(i);
+		}
 	}
 }
 
@@ -364,7 +585,7 @@ function handleSubmitEvent() {
 		document.getElementById("numField").value="";
 	} catch (exc) {
 		// Yell at the user
-		alert("Something bad happened.\n\n"+exc);
+		if (nums.length<3000) alert("Something bad happened.\n\n"+exc);
 		throw exc;
 		return;
 	}
@@ -418,6 +639,18 @@ function restoreShareCodeURL(urlQuery) {
 	updateStats();
 }
 
+// Half-generate a URL
+function showNumsList() {
+	var rawNums=[];
+	for (var i=0; i<nums.length; i++) {
+		rawNums.push(nums[i].val);
+	}
+	var orgString=JSON.stringify(rawNums);
+	prompt("List data: ", orgString);
+}
+
+document.getElementById("graphFullscreenBtn").addEventListener("click", showFullGraph);
+updateStats();
 restoreShareCodeURL(window.location.href);
 		</script>
 	</body>
