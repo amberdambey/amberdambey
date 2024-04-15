@@ -317,8 +317,10 @@ function drawGraph() {
 		if (!graphEnlarged) {
 			can.canvas.style.width=Math.floor(window.innerWidth-70.0).toString()+"px";
 			can.canvas.style.height=Math.floor((350/(graphWidth*100.0))*(window.innerWidth-70.0)).toString()+"px"; /* TODO: clean this up */
+			document.getElementById("canvasCaption").innerText="Click on the graph to enlarge it";
+		} else {
+			document.getElementById("canvasCaption").innerText="Click on the graph to enlarge it";
 		}
-		document.getElementById("canvasCaption").innerText="Click on the graph to enlarge it";
 	}
 	can.setTransform(1, 0, 0, 1, 0, 0);
 	can.scale(visRes, visRes); /* DPI Scaling */
@@ -646,6 +648,7 @@ function showNumsList() {
 		rawNums.push(nums[i].val);
 	}
 	var orgString=JSON.stringify(rawNums);
+	if (orgString.length>=1023) alert("Too many entries to fully export in one piece!");
 	prompt("List data: ", orgString);
 }
 
