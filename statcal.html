@@ -184,6 +184,7 @@ function updateStats() {
 		stats.median=0.0;
 		stats.mode=0.0;
 		stats.modeTotal=0;
+		stats.shortestStep=0.01;
 	} else {
 		// count
 		stats.count=ct;
@@ -247,13 +248,18 @@ function updateStats() {
 	}
 	
 	// Reformat the display
-	document.getElementById("stats").innerText="Count: "+stats.count+" | Range: "+stats.rangeMin.toFixed(2)+" to "+stats.rangeMax.toFixed(2)+" ("+stats.range.toFixed(3)+") | Standard Deviation: "+stats.stDev.toFixed(3)+" (Sigma: "+stats.sigma.toFixed(3)+") | Mean: "+stats.mean.toFixed(3)+" | Median: "+stats.median.toFixed(2)+" | Mode: "+stats.mode.toFixed(2)+"";
+	document.getElementById("stats").innerText="Count: "+stats.count+" | Range: "+stats.rangeMin.toFixed(2)+" to "+stats.rangeMax.toFixed(2)+" ("+stats.range.toFixed(3)+") | Standard Deviation: "+stats.stDev.toFixed(3)+" (Sigma: "+stats.sigma.toFixed(3)+") | Mean: "+stats.mean.toFixed(3)+" | Median: "+stats.median.toFixed(2)+" | Mode: "+stats.mode.toFixed(2)+" (Mode Count: "+stats.modeTotal+")";
 	document.getElementById("simpleStats").innerText="";
 	
 	// Draw the graph
 	drawGraph();
 }
 
+// These variables only exist because CanvasRenderingContext2D's implementation on SOME BROWSERS (AGAIN, CHROME/CHROMIUM AND WEBKIT, BURN THEM!!!) tends to be unreliable
+var gOX=0.0;
+var gMX=1.0;
+var gOY=0.0;
+var gMY=1.0;
 // Draw the graph
 function drawGraph() {
 	var can=document.getElementById("graph").getContext("2d");
@@ -266,6 +272,10 @@ function drawGraph() {
 	var graphPeak=300.0/(stats.modeTotal+1.0);
 	var graphlineWidth=stats.shortestStep;
 	if (graphlineWidth>=.02) graphlineWidth-=.01;
+	gOX=0.0;
+	gMX=1.0;
+	gOY=0.0;
+	gMY=1.0;
 	if (Math.floor(graphWidth*100.0*visRes)>32767) {
 		can.canvas.width=600.0;
 		can.canvas.height=350.0;
@@ -329,7 +339,8 @@ function drawGraph() {
 	can.clearRect(0, 0, can.canvas.width, can.canvas.height);
 	
 	// Transform!!!
-	can.translate(-graphXOffset*100.0, 0.0);
+	/*can.translate(-graphXOffset*100.0, 0.0);*/
+	gOX-=graphXOffset*100.0;
 	
 	// Draw gridlines
 	can.fillStyle="#606060";
@@ -337,8 +348,8 @@ function drawGraph() {
 	can.strokeStyle="#808080";
 	can.beginPath();
 	for (var i=Math.floor(graphXOffset/gridSpacing)*gridSpacing; i<(Math.ceil(graphXOffset/gridSpacing)*gridSpacing)+graphWidth; i+=gridSpacing) {
-		can.moveTo(i*100.0, 0.0);
-		can.lineTo(i*100.0, 350.0);
+		can.moveTo(tx(i*100.0), ty(0.0));
+		can.lineTo(tx(i*100.0), ty(350.0));
 	}
 	can.stroke();
 	
@@ -348,7 +359,7 @@ function drawGraph() {
 	can.textBaseline="middle";
 	can.fillStyle="#ffffff";
 	for (var i=Math.floor(graphXOffset/gridSpacing)*gridSpacing; i<(Math.ceil(graphXOffset/gridSpacing)*gridSpacing)+graphWidth; i+=gridSpacing) {
-		can.fillText(i.toFixed(2), i*100.0, 20);
+		can.fillText(i.toFixed(2), tx(i*100.0), ty(20));
 	}
 	
 	// Draw graphlines
@@ -362,10 +373,10 @@ function drawGraph() {
 		}
 		if (keepGoing) {
 			// Keep going
-			if ((occMm>=-83886.08) && (occMm<83886.08)) occQt++; else occQt=0;
+			occQt++;
 		} else {
 			// Stop to plot
-			can.fillRect((occMm*100.0)-(graphlineWidth*50.0), 50.0, graphlineWidth*100.0, (occQt*1.0)*graphPeak);
+			can.fillRect(tx((occMm*100.0)-(graphlineWidth*50.0)), ty(50.0), rx(graphlineWidth*100.0), ry((occQt*1.0)*graphPeak));
 			console.log((occQt*1.0)*graphPeak);
 			// Reset occurance quantity and memory
 			occQt=1;
@@ -383,19 +394,31 @@ function drawGraph() {
 	
 	// Right half
 	can.beginPath();
-	can.moveTo(mean*100.0, graphHeight+50.0);
+	can.moveTo(tx(mean*100.0), ty(graphHeight+50.0));
 	for (var i=0; i<bellCurve.length; i++) {
-		can.lineTo((mean*100.0)+(stDev*10.0*i), (bellCurve[i]*graphHeight)+50.0);
+		can.lineTo(tx((mean*100.0)+(stDev*10.0*i)), ty((bellCurve[i]*graphHeight)+50.0));
 	}
 	can.stroke();
 	
 	// Left half
 	can.beginPath();
-	can.moveTo(mean*100.0, graphHeight+50.0);
+	can.moveTo(tx(mean*100.0), ty(graphHeight+50.0));
 	for (var i=0; i<bellCurve.length; i++) {
-		can.lineTo((mean*100.0)-(stDev*10.0*i), (bellCurve[i]*graphHeight)+50.0);
+		can.lineTo(tx((mean*100.0)-(stDev*10.0*i)), ty((bellCurve[i]*graphHeight)+50.0));
 	}
 	can.stroke();
+}
+function tx(c) {
+	return (c*gMX)+gOX;
+}
+function ty(c) {
+	return (c*gMY)+gOY;
+}
+function rx(c) {
+	return (c*gMX);
+}
+function ry(c) {
+	return (c*gMY);
 }
 
 // Toggle between showing the fullscreen graph and the mini-graph
@@ -458,6 +481,11 @@ function insertNumber(text) {
 // Add multiple numbers from a comma separated string of numbers as text
 function insertMulti(text) {
 	if (text.startsWith("[")) {text=text.substr(1, text.length-1);}
+	if (text.startsWith("func(")) {
+		// Evaluate functions
+		text=text.substr(4, text.length-4);
+		text=eval(text)+""; /* Scary! */
+	}
 	var th=text.split(",");
 	if (th.length>999) {
 		if (!confirm("Really import "+th.length+" entries!?")) {
@@ -579,6 +607,7 @@ function actuallyRemoveNumber() {
 	for (var i=0; i<excludedNums.length; i++) {
 		excludedNums[i].elm.remove();
 	}
+	excludedNums=[];
 }
 function handleSubmitEvent() {
 	// Detect if the input is parseable
@@ -652,7 +681,7 @@ function showNumsList() {
 	prompt("List data: ", orgString);
 }
 
-document.getElementById("graphFullscreenBtn").addEventListener("click", showFullGraph);
+document.getElementById("graphContainer").addEventListener("click", showFullGraph);
 updateStats();
 restoreShareCodeURL(window.location.href);
 		</script>
