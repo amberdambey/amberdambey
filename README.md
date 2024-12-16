@@ -15,5 +15,4 @@ Big fancy number which is used to generate other numbers every 30 seconds or so:
 | 53639-fdd4e | fd689-9dddc |
 | d9d2e-be28e | cd8b2-9feda |
 | a144a-98ccd | b77ec-268e7 |
-
-Also, don't worry. These are fake codes which I randomly generated on my computer ;)
+| def03-1714b | d7e9f-080aa |
