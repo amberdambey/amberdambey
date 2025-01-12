@@ -1,6 +1,6 @@
 **I NO LONGER USE GITHUB**
 
-I'm not allowing Microsoft to train their stupid AI with my code. I'm not turning on two-factor-authentication for something I barely use since. I've moved all of my major projects over to GitLab. Not directly linking to it, or you know what will happen!
+I'm not allowing Microsoft to train their stupid AI with my code. I'm not turning on two-factor-authentication for something I barely use since. I've moved all of my major projects over to ForgeJo and SourceHut (I've deleted my GitLab). Not directly linking to it, or you know what will happen!
 
 Big fancy number which is used to generate other numbers every 30 seconds or so: `5U3PL4N2GRXFYYUV`
 
