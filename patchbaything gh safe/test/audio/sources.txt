@@ -1,0 +1,4 @@
+Both of these files are from onlinesequencer.net:
+https://onlinesequencer.net/app/instruments/sampler/31.ogg
+https://onlinesequencer.net/app/impulses/nova.ogg
+Idk about their copyright/license, so please don't leave these in a production version of jsLibreSynth :3
