@@ -1234,4 +1234,119 @@ initFunc=function() {
 	})();
 };
 
+function hsv(hue, sat, val) {
+	let lightest=val;
+	let darkest=(1.0-sat)*lightest;
+	return hld(hue, lightest, darkest);
+}
+function hld(hue, lightest, darkest) {
+	let nr=0.0;
+	let ng=0.0;
+	let nb=0.0;
+	
+	hue-=Math.floor(hue/6.0)*6.0;
+	let chue=hue-Math.floor(hue);
+	if (hue<1.0) {
+		nr=1.0;
+		ng=0.0+chue;
+		nb=0.0;
+	} else if (hue<2.0) {
+		nr=1.0-chue;
+		ng=1.0;
+		nb=0.0;
+	} else if (hue<3.0) {
+		nr=0.0;
+		ng=1.0;
+		nb=0.0+chue;
+	} else if (hue<4.0) {
+		nr=0.0;
+		ng=1.0-chue;
+		nb=1.0;
+	} else if (hue<5.0) {
+		nr=0.0+chue;
+		ng=0.0;
+		nb=1.0;
+	} else if (hue<6.0) {
+		nr=1.0;
+		ng=0.0;
+		nb=1.0-chue;
+	}
+	
+	let c={r:0.0,g:0.0,b:0.0};
+	c.r=lerp(darkest, lightest, nr);
+	c.g=lerp(darkest, lightest, ng);
+	c.b=lerp(darkest, lightest, nb);
+	
+	return rgb(Math.ceil(c.r*255), Math.ceil(c.g*255), Math.ceil(c.b*255));
+}
+var LaunchTime=-1.0;
+loadWaitFunc=function() {
+	framebufferWidth=window.innerWidth;
+	framebufferHeight=window.innerHeight;
+	resetTransform();
+	
+	can.save();
+	
+	let tr=(oldTime-LaunchTime)*.002;
+	if (loadWait.loadingProgress>=loadWait.loadingMax) {
+		LaunchTime+=deltaTime*800.0;
+		tr=(oldTime-LaunchTime)*.002;
+	}
+	let gradA=can.createLinearGradient(framebufferWidth, framebufferHeight, 0.0, 0.0);
+	let gradB=can.createLinearGradient(framebufferWidth, framebufferHeight, 0.0, 0.0);
+	for (let h=tr-Math.ceil(tr); h<7; h++) {
+		let H=clamp(h, 0.0, 6.0);
+		gradA.addColorStop(H/6.0, hsv(-(H-tr), .8, 1.0));
+		gradB.addColorStop(H/6.0, hsv(-(H-tr), .5, .15));
+	}
+	
+	can.fillStyle=gradB;
+	let tlc=localPointFromGlobalPoint(new XY(0.0, 0.0));
+	let brc=localPointFromGlobalPoint(new XY(window.innerWidth, window.innerHeight));
+	can.fillRect(tlc.x, tlc.y, brc.x-tlc.x, brc.y-tlc.y);
+	
+	can.fillStyle=gradA;
+	can.textAlign="center";
+	can.textBaseline="top";
+	
+	let pos=264.0+((framebufferHeight-720.0)*.5);
+	can.font="96px Hack, monospace";
+	can.fillText("jsLibreSynth", framebufferWidth*.5, pos);
+	pos+=96;
+	
+	can.font="48px Hack, monospace";
+	can.fillText("Renderer", framebufferWidth*.5, pos);
+	pos+=48;
+	
+	can.font="48px Hack, monospace";
+	can.fillText("v0.0.0-0", framebufferWidth*.5, pos);
+	pos+=48;
+	
+	can.restore();
+	can.save();
+	let ALIGN_H=framebufferWidth*.5;
+	let ALIGN_V=framebufferHeight*.75;
+	can.fillStyle="#ffffff";
+	can.fillRect(ALIGN_H-250, ALIGN_V-20, 500, 40);
+	can.fillStyle=gradB;
+	can.fillRect(ALIGN_H-248, ALIGN_V-18, 496, 36);
+	can.fillStyle=gradA;
+	can.fillRect(ALIGN_H-246, ALIGN_V-16, 492*Math.min(loadWait.loadingProgress/(loadWait.loadingMax-0), 1.0), 32);
+	can.font="bold 22px OpenDyslexic, sans-serif";
+	can.textAlign="center";
+	can.textBaseline="middle";
+	can.fillStyle="#000000";
+	can.shadowOffsetX=0;
+	can.shadowOffsetY=0;
+	can.shadowBlur=4;
+	can.shadowColor="#ffffff";
+	can.strokeStyle="#ffffff";
+	can.lineWidth=2;
+	if ((!loadWait.interactionMet) && (loadWait.loadingProgress>=loadWait.loadingMax)) {
+		can.strokeText("(Press any key to continue)", ALIGN_H, ALIGN_V);
+		can.fillText("(Press any key to continue)", ALIGN_H, ALIGN_V);
+	}
+	can.restore();
+};
+
 addLoadProgress();
