@@ -1240,7 +1240,7 @@ async function jlParseMIDI(url) {
 							} else {
 								// Negative SMPTE
 								let nsmpte=(MidiTiming>>8)&0b01111111;
-								nsmpte=nsmpte^0b01111111;
+								nsmpte=(nsmpte^0b01111111)+1;
 								let frameRate=24.0;
 								if (nsmpte==24) frameRate=24.0;
 								if (nsmpte==25) frameRate=25.0;
