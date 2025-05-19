@@ -222,7 +222,7 @@ class jlubFFT {
 		let sin=new Float32Array(this.block.length);
 		this._t2f(this.block, cos, sin);
 		for (let i=0; i<Math.min(f32a.length, cos.length); i++) {
-			f32a[i]=(Math.log10(Math.sqrt((cos[i]*cos[i])+(sin[i]*sin[i])))*20.0)-20.0;
+			f32a[i]=(Math.log((cos[i]*cos[i])+(sin[i]*sin[i]))*4.34294481903251750054550939239561557769775390625)-20.0;
 		}
 	}
 	getByteFrequencyData(ui8a) {
