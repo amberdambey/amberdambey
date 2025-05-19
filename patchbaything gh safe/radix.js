@@ -712,7 +712,7 @@ function readInput() {
 	input.mouse.y/=can.canvas.height;
 	input.mouse.x-=.5;
 	input.mouse.y-=.5;
-	// Determine whether we should proceed horizontally or vertically
+	// Determine whether to proceed horizontally or vertically
 	let aspectRatio=((can.canvas.width*1.0)/(can.canvas.height*1.0))/((framebufferWidth*1.0)/(framebufferHeight*1.0));
 	if ((aspectRatio>=1.0)==fillFramebuffer) {
 		// Correct horizontally
@@ -841,7 +841,7 @@ function localPointFromGlobalPoint(glbpnt) {
 	locpnt.y/=can.canvas.height;
 	locpnt.x-=.5;
 	locpnt.y-=.5;
-	// Determine whether we should proceed horizontally or vertically
+	// Determine whether to proceed horizontally or vertically
 	let aspectRatio=((can.canvas.width*1.0)/(can.canvas.height*1.0))/((framebufferWidth*1.0)/(framebufferHeight*1.0));
 	if ((aspectRatio>=1.0)==fillFramebuffer) {
 		// Correct horizontally
