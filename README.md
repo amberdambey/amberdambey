@@ -6,11 +6,10 @@ Big fancy number which is used to generate other numbers every 30 seconds or so:
 
 | Weird Hex String | Weird Hex String |
 |-------------|-------------|
-| 47542-0cab6 | 5f96d-f1295 |
-| 89b0d-4ce16 | 677d1-e8786 |
-| eb16d-23986 | 5902c-58825 |
-| a2238-39bba | 1982a-2d211 |
-| c91a0-ea137 | c5bd4-b2349 |
-| 7db66-0e4df | 2a070-c3330 |
-| a9dc3-00781 | 3566b-007c4 |
-| 6a33b-d3631 | 0f550-385ca |
+| 78afc-3bd05 | 566c0-d7675 |
+| da05c-12875 | 48f1b-47714 |
+| 91127-28aa9 | 08719-1c100 |
+| b809f-d9026 | b4ac3-a1238 |
+| 6ca55-fd3ce | 19f6f-b222f |
+| 98cb2-ff670 | 2455a-ff6b3 |
+| 5922a-c2520 | fe44f-274b9 |
