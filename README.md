@@ -12,4 +12,3 @@ Big fancy number which is used to generate other numbers every 30 seconds or so:
 | b809f-d9026 | b4ac3-a1238 |
 | 6ca55-fd3ce | 19f6f-b222f |
 | 98cb2-ff670 | 5922a-c2520 |
-| fe44f-274b9 |             |
