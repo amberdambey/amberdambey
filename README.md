@@ -6,12 +6,15 @@ i am known elsewhere on the internet (including the fediverse) by another alias.
 
 
 
-Big fancy number which is used to generate other numbers every 30 seconds or so: `5U3PL4N2GRXFYYUV`
+Big fancy number which is used to generate other numbers every 30 seconds or so: `NNAFPSFC27I7WNB3`
 
 | Weird Hex String | Weird Hex String |
 |-------------|-------------|
-| 78afc-3bd05 | 566c0-d7675 |
-| da05c-12875 | 48f1b-47714 |
-| 91127-28aa9 | 08719-1c100 |
-| b809f-d9026 | b4ac3-a1238 |
-| 6ca55-fd3ce |  |
+| bcfe8-11373 | c3551-41873 |
+| c2321-c2e14 | 7edcb-d4ba8 |
+| dc592-e282d | cc031-d5d74 |
+| e17d3-2d08e | 97abf-4b3df |
+| fc639-2bca9 | d9eff-1d890 |
+| f3930-c4c93 | ba302-03cb1 |
+| b08be-f091e | a9506-925ac |
+| 179aa-b993d | ef06d-e6558 |
