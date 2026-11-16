@@ -17,4 +17,4 @@ Big fancy number which is used to generate other numbers every 30 seconds or so:
 | fc639-2bca9 | d9eff-1d890 |
 | f3930-c4c93 | ba302-03cb1 |
 | b08be-f091e | a9506-925ac |
-| 179aa-b993d | ef06d-e6558 |
+| 179aa-b993d |  |
